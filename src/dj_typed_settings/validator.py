@@ -1,4 +1,5 @@
 import logging
+import types
 from dataclasses import MISSING, dataclass, fields
 from difflib import get_close_matches
 from typing import Any, Union, get_args, get_origin, get_type_hints
@@ -89,8 +90,8 @@ def validate_type(
     if type_hint is Any:
         return
 
-    # Handle Optional[T] which is Union[T, NoneType]
-    if origin is Union:
+    # Handle Optional[T] which is Union[T, NoneType] or T | None
+    if origin is Union or (hasattr(types, "UnionType") and origin is types.UnionType):
         # Check if value matches ANY of the args
         type_errors = []
         value_errors = []
@@ -366,8 +367,8 @@ def cast_to_type(value: Any, type_hint: Any, list_delimiter: str = ",") -> Any:
     origin = get_origin(type_hint)
     args = get_args(type_hint)
 
-    # Handle Optional[T] / Union[T, None]
-    if origin is Union:
+    # Handle Optional[T] / Union[T, None] / T | None
+    if origin is Union or (hasattr(types, "UnionType") and origin is types.UnionType):
         if value is None or (isinstance(value, str) and value.lower() == "none"):
             return None
         # Try casting to each type in the union (except NoneType)
