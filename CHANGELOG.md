@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.0
+
+- Better support for Python 3.10 and 3.11.
+
 ## 0.1.0
 
 - Initial release.
