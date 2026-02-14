@@ -1,3 +1,4 @@
+from dj_typed_settings import defaults
 from dj_typed_settings.alias import (
     AUTH_PASSWORD_VALIDATOR,
     CACHE,
@@ -12,6 +13,7 @@ __all__ = [
     "CACHE",
     "DATABASE",
     "TEMPLATE",
+    "defaults",
     "settings",
     "validate_settings",
 ]

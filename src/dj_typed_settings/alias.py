@@ -1,5 +1,5 @@
 # ruff: noqa: N802, N803
-from typing import Any
+from typing import Annotated, Any
 
 from dj_typed_settings.schema import (
     AuthPasswordValidatorSchema,
@@ -10,11 +10,11 @@ from dj_typed_settings.schema import (
 
 
 def TEMPLATE(
-    BACKEND: str,
-    DIRS: list[str] | None = None,
-    APP_DIRS: bool = False,  # noqa: FBT001, FBT002
-    OPTIONS: dict[str, Any] | None = None,
-    **kwargs,
+    BACKEND: Annotated[str, "The template backend to use."],
+    DIRS: Annotated[list[str] | None, "Directories where the engine should look for template source files."] = None,
+    APP_DIRS: Annotated[bool, "Whether to look for template source files inside installed applications."] = False,  # noqa: FBT002
+    OPTIONS: Annotated[dict[str, Any] | None, "Extra parameters to pass to the template backend."] = None,
+    **kwargs: Annotated[Any, "Extra parameters to pass to the template backend."],
 ) -> dict[str, Any]:
     """
     Typed helper for defining a Django Template backend configuration.
@@ -30,10 +30,10 @@ def TEMPLATE(
 
 
 def DATABASE(
-    ENGINE: str,
-    NAME: str,
-    OPTIONS: dict[str, Any] | None = None,
-    **kwargs,
+    ENGINE: Annotated[str, "The database backend to use."],
+    NAME: Annotated[str, "The name of the database to use."],
+    OPTIONS: Annotated[dict[str, Any] | None, "Extra parameters to use when connecting to the database."] = None,
+    **kwargs: Annotated[Any, "Extra parameters to use when connecting to the database."],
 ) -> dict[str, Any]:
     """
     Typed helper for defining a Django Database configuration.
@@ -51,13 +51,15 @@ def DATABASE(
 
 
 def CACHE(
-    BACKEND: str,
-    LOCATION: str | None = None,
-    TIMEOUT: int | None = None,
-    KEY_PREFIX: str | None = None,
-    VERSION: int | None = None,
-    OPTIONS: dict[str, Any] | None = None,
-    **kwargs,
+    BACKEND: Annotated[str, "The cache backend to use."],
+    LOCATION: Annotated[str | None, "The location of the cache to use."] = None,
+    TIMEOUT: Annotated[int | None, "The number of seconds before a cache entry is considered stale."] = None,
+    KEY_PREFIX: Annotated[
+        str | None, "A string that will be automatically included (prepended) to all cache keys."
+    ] = None,
+    VERSION: Annotated[int | None, "The default version number for cache keys."] = None,
+    OPTIONS: Annotated[dict[str, Any] | None, "Extra parameters to pass to the cache backend."] = None,
+    **kwargs: Annotated[Any, "Extra parameters to pass to the cache backend."],
 ) -> dict[str, Any]:
     """
     Typed helper for defining a Django Cache backend configuration.
@@ -81,9 +83,9 @@ def CACHE(
 
 
 def AUTH_PASSWORD_VALIDATOR(
-    NAME: str,
-    OPTIONS: dict[str, Any] | None = None,
-    **kwargs,
+    NAME: Annotated[str, "The dotted path to the password validator class."],
+    OPTIONS: Annotated[dict[str, Any] | None, "Optional parameters for the password validator."] = None,
+    **kwargs: Annotated[Any, "Optional parameters for the password validator."],
 ) -> dict[str, Any]:
     """
     Typed helper for defining a Django Auth Password Validator configuration.

@@ -11,10 +11,10 @@ def test_validate_type_basic():
     validate_type("string", str, "field")
     validate_type(True, bool, "field")
 
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         validate_type("1", int, "field")
 
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         validate_type(1, str, "field")
 
 
@@ -22,7 +22,7 @@ def test_validate_type_list():
     validate_type(["a", "b"], list[str], "field")
     validate_type([], list, "field")
 
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         validate_type("not a list", list[str], "field")
 
 
@@ -30,7 +30,7 @@ def test_validate_type_dict():
     validate_type({"a": 1}, dict[str, int], "field")
     validate_type({}, dict, "field")
 
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         validate_type("not a dict", dict[str, int], "field")
 
 
@@ -40,11 +40,11 @@ def test_validate_type_union_optional():
     validate_type(None, int | None, "field")
     validate_type(1, int | None, "field")
 
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(ValueError) as exc:
         validate_type(1.5, int | str, "field")
     assert "If 'field' is specified, it must be a int or str, but got float" in str(exc.value)
 
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(ValueError) as exc:
         validate_type("s", int | None, "field")
     assert "If 'field' is specified, it must be a int, but got str" in str(exc.value)
 
@@ -125,10 +125,10 @@ def test_validate_type_list_tuple_union():
     validate_type(("a", "b"), list | tuple, "field")
 
     # Should reject other types
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         validate_type("not a list or tuple", list | tuple, "field")
 
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         validate_type(123, list | tuple, "field")
 
 
@@ -141,7 +141,7 @@ def test_validate_type_tuple_list_union():
     validate_type(("a", "b"), tuple | list, "field")
 
     # Should reject other types
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         validate_type("not a tuple or list", tuple | list, "field")
 
 

@@ -36,14 +36,16 @@ TYPE_OVERRIDES = {
     "SECURE_PROXY_SSL_HEADER": "tuple | list | None",
     "MANAGERS": "list[tuple[str, str]] | tuple[tuple[str, str], ...]",
     "ADMINS": "list[tuple[str, str]] | tuple[tuple[str, str], ...]",
-    "DATABASES": "dict[str, dict[str, Any]]",
-    "CACHES": "dict[str, dict[str, Any]]",
-    "TEMPLATES": "list[dict[str, Any]] | tuple[dict[str, Any], ...]",
-    "AUTH_PASSWORD_VALIDATORS": "list[dict[str, Any]] | tuple[dict[str, Any], ...]",
+    "DATABASES": "dict[str, DatabaseSchema]",
+    "CACHES": "dict[str, CacheSchema]",
+    "TEMPLATES": "list[TemplateSchema] | tuple[TemplateSchema, ...]",
+    "AUTH_PASSWORD_VALIDATORS": "list[AuthPasswordValidatorSchema] | tuple[AuthPasswordValidatorSchema, ...]",
     "INSTALLED_APPS": "list[str] | tuple[str, ...]",
     "MIDDLEWARE": "list[str] | tuple[str, ...]",
     "AUTHENTICATION_BACKENDS": "list[str] | tuple[str, ...]",
-    "STATICFILES_DIRS": "list[str] | tuple[str, ...]",
+    "STATICFILES_DIRS": "list[str | Path] | tuple[str | Path, ...]",
+    "LOCALE_PATHS": "list[str | Path] | tuple[str | Path, ...]",
+    "FIXTURE_DIRS": "list[str | Path] | tuple[str | Path, ...]",
 }
 
 REQUIRED_SETTINGS = ["SECRET_KEY"]
@@ -183,7 +185,7 @@ def infer_type(node):
     elif isinstance(node, ast.Name):
         if node.id in ["True", "False"]:
             return "bool"
-    elif isinstance(node, (ast.BinOp, ast.UnaryOp)):
+    elif isinstance(node, ast.BinOp | ast.UnaryOp):
         try:
             val = eval(compile(ast.Expression(node), "", "eval"))  # noqa: S307
             return type(val).__name__
@@ -200,7 +202,7 @@ def extract_default_value(node):
             return "None"
         elif isinstance(value, str):
             return json.dumps(value)
-        elif isinstance(value, (int, float, bool)):
+        elif isinstance(value, int | float | bool):
             return str(value)
         return None
     elif isinstance(node, ast.List):
@@ -236,7 +238,7 @@ def extract_default_value(node):
     return None
 
 
-def get_autocomplete_type(type_hint: str, has_default: bool) -> str:
+def get_autocomplete_type(type_hint: str, *, has_default: bool) -> str:
     """Convert validation type to stricter autocomplete type."""
     if not has_default:
         return type_hint
@@ -303,26 +305,26 @@ def generate_schema(url=None):
     content = ""
 
     if url:
-        print(f"Downloading from {url}...")
+        print(f"Downloading from {url}...")  # noqa: T201
         try:
-            with urllib.request.urlopen(url) as response:
+            with urllib.request.urlopen(url) as response:  # noqa: S310
                 content = response.read().decode("utf-8")
         except Exception as e:
-            print(f"Error downloading from {url}: {e}")
+            print(f"Error downloading from {url}: {e}")  # noqa: T201
             sys.exit(1)
     else:
-        print("Attempting to read from installed Django version...")
+        print("Attempting to read from installed Django version...")  # noqa: T201
         try:
-            from django.conf import global_settings
+            from django.conf import global_settings  # noqa: PLC0415
 
             content = inspect.getsource(global_settings)
-            print(f"Successfully read global_settings from {global_settings.__file__}")
+            print(f"Successfully read global_settings from {global_settings.__file__}")  # noqa: T201
         except ImportError:
-            print("Error: Django is not installed in the current environment.")
-            print("Please install Django or provide a URL using --url.")
+            print("Error: Django is not installed in the current environment.")  # noqa: T201
+            print("Please install Django or provide a URL using --url.")  # noqa: T201
             sys.exit(1)
         except Exception as e:
-            print(f"Error reading installed Django settings: {e}")
+            print(f"Error reading installed Django settings: {e}")  # noqa: T201
             sys.exit(1)
 
     source_lines = content.splitlines()
@@ -359,7 +361,7 @@ def generate_schema(url=None):
                         has_default = False
 
                     # Collect for defaults.py
-                    autocomplete_type = get_autocomplete_type(type_hint, has_default)
+                    autocomplete_type = get_autocomplete_type(type_hint, has_default=has_default)
 
                     # Check manual override
                     manual_val = DEFAULTS_OVERRIDES.get(name)
@@ -404,14 +406,13 @@ def generate_schema(url=None):
                         default_val = "field(default_factory=list)"
                     elif "dict" in type_hint:
                         default_val = "field(default_factory=dict)"
+                    # If we have a concrete default (not None), use strict type
+                    elif has_default and final_val not in ("None", "[]", "{}", "()"):
+                        default_val = final_val
                     else:
-                        # If we have a concrete default (not None), use strict type
-                        if has_default and final_val not in ("None", "[]", "{}", "()"):
-                            default_val = final_val
-                        else:
-                            if "None" not in type_hint and type_hint != "Any":
-                                type_hint = f"{type_hint} | None"
-                            default_val = "None"
+                        if "None" not in type_hint and type_hint != "Any":
+                            type_hint = f"{type_hint} | None"
+                        default_val = "None"
 
                     field_line = f"    {name}: {type_hint}"
                     if has_default:
@@ -431,9 +432,10 @@ def generate_schema(url=None):
     # Generate validation schema (existing)
     lines = [
         '"""',
-        f"Generated by scripts/generate_schema.py on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        f"Generated by scripts/generate_schema.py on {datetime.now().astimezone().strftime('%Y-%m-%d %H:%M:%S')}",
         "DO NOT EDIT MANUALLY - use the generator script to update.",
         '"""',
+        "",
         "from dataclasses import asdict, dataclass, field",
         "from pathlib import Path",
         "from typing import Any",
@@ -452,7 +454,7 @@ def generate_schema(url=None):
         '    """',
         "    The template backend to use.",
         '    """',
-        "    DIRS: list[str] = field(default_factory=list)",
+        "    DIRS: list[str | Path] = field(default_factory=list)",
         '    """',
         "    Directories where the engine should look for template source files, in search order.",
         '    """',
@@ -546,11 +548,14 @@ def generate_schema(url=None):
         '    """',
         "    KEY_PREFIX: str | None = None",
         '    """',
-        "    A string that will be automatically included (prepended by default) to all cache keys used by the Django server.",
+        "    A string that will be automatically included (prepended by default) "
+        "to all cache keys used by the Django server.",
         '    """',
         "    KEY_FUNCTION: str | None = None",
         '    """',
-        "    A string containing a dotted path to a function (or any callable) that defines how to compose a prefix, version and key into a final cache key.",
+        "    A string containing a dotted path to a function (or any callable) "
+        "that defines how to compose a prefix, version and "
+        "key into a final cache key.",
         '    """',
         "    VERSION: int | None = None",
         '    """',
@@ -580,7 +585,7 @@ def generate_schema(url=None):
     with open(OUTPUT_FILE, "w") as f:
         f.write("\n".join(lines) + "\n")
 
-    print(f"Schema generated successfully at {OUTPUT_FILE}")
+    print(f"Schema generated successfully at {OUTPUT_FILE}")  # noqa: T201
 
     # Generate defaults file
     generate_defaults_file(defaults_file_fields)
@@ -594,11 +599,21 @@ def generate_defaults_file(settings_fields):
         "Import this module using `from dj_typed_settings.defaults import *` in settings.py",
         "to get IDE autocomplete and Django's actual default values.",
         "",
-        f"Generated by scripts/generate_schema.py on {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+        f"Generated by scripts/generate_schema.py on {datetime.now().astimezone().strftime('%Y-%m-%d %H:%M:%S')}",
         "DO NOT EDIT MANUALLY - use the generator script to update.",
         '"""',
+        "",
+        "from __future__ import annotations",
+        "",
         "from pathlib import Path",
         "from typing import Any",
+        "",
+        "from dj_typed_settings.schema import (",
+        "    AuthPasswordValidatorSchema,",
+        "    CacheSchema,",
+        "    DatabaseSchema,",
+        "    TemplateSchema,",
+        ")",
         "",
     ]
 
@@ -615,7 +630,7 @@ def generate_defaults_file(settings_fields):
     DEFAULTS_OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
     with open(DEFAULTS_OUTPUT_FILE, "w") as f:
         f.write("\n".join(lines) + "\n")
-    print(f"Defaults file generated at {DEFAULTS_OUTPUT_FILE}")
+    print(f"Defaults file generated at {DEFAULTS_OUTPUT_FILE}")  # noqa: T201
 
 
 if __name__ == "__main__":

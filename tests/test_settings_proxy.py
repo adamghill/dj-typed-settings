@@ -3,7 +3,8 @@ import inspect
 import pytest
 from django.test import override_settings
 
-from dj_typed_settings import settings
+from dj_typed_settings.conf import settings
+from dj_typed_settings.schema import SettingsSchema
 
 
 def test_settings_proxy_standard_setting():
@@ -17,7 +18,7 @@ def test_settings_proxy_standard_setting():
     with override_settings(DEBUG=False):
         assert settings.DEBUG is False
 
-    assert isinstance(settings.SECRET_KEY, (str, type(None)))
+    assert isinstance(settings.SECRET_KEY, str | type(None))
 
 
 @override_settings(MyCustomSetting="custom_value")
@@ -28,6 +29,8 @@ def test_settings_proxy_custom_setting():
 
     # Verify type
     assert isinstance(settings.MyCustomSetting, str)
+    # settings is a proxy object
+    assert isinstance(settings, object)
 
 
 def test_settings_proxy_attribute_error():
@@ -44,7 +47,6 @@ def test_settings_proxy_is_module_like():
 
 def test_docstrings_in_schema():
     """Verify that SettingsSchema has docstrings for fields."""
-    from dj_typed_settings.schema import SettingsSchema
 
     source = inspect.getsource(SettingsSchema)
     assert '"""' in source

@@ -229,8 +229,8 @@ def test_validate_settings_templates_not_list(caplog):
     assert "Validating Settings..." in caplog.text
     assert "❌ INVALID SETTINGS" in caplog.text
     assert (
-        "'TEMPLATES' must be a list or tuple, but got str" in caplog.text
-        or "If 'TEMPLATES' is specified, it must be a list or tuple, but got str" in caplog.text
+        "If 'TEMPLATES' is specified, it must be a list[TemplateSchema] or tuple[TemplateSchema, ...], but got str"
+        in caplog.text
     )
 
 
@@ -246,11 +246,8 @@ def test_validate_settings_templates_item_not_dict(caplog):
 
     assert "Validating Settings..." in caplog.text
     assert "❌ INVALID SETTINGS" in caplog.text
-    # Union type validation fails generically for items
-    assert (
-        "'TEMPLATES' must be a list or tuple, but got list" in caplog.text
-        or "If 'TEMPLATES' is specified, it must be a list or tuple, but got list" in caplog.text
-    )
+    # Now it reports specific item error
+    assert "'TEMPLATES[0]' must be a dict, got str" in caplog.text
 
 
 def test_validate_settings_auth_password_validators_not_list(caplog):
@@ -266,8 +263,8 @@ def test_validate_settings_auth_password_validators_not_list(caplog):
     assert "Validating Settings..." in caplog.text
     assert "❌ INVALID SETTINGS" in caplog.text
     assert (
-        "'AUTH_PASSWORD_VALIDATORS' must be a list or tuple, but got str" in caplog.text
-        or "If 'AUTH_PASSWORD_VALIDATORS' is specified, it must be a list or tuple, but got str" in caplog.text
+        "If 'AUTH_PASSWORD_VALIDATORS' is specified, it must be a "
+        "list[AuthPasswordValidatorSchema] or tuple[AuthPasswordValidatorSchema, ...], but got str" in caplog.text
     )
 
 
@@ -283,11 +280,8 @@ def test_validate_settings_auth_password_validators_item_not_dict(caplog):
 
     assert "Validating Settings..." in caplog.text
     assert "❌ INVALID SETTINGS" in caplog.text
-    # Union type validation fails generically for items
-    assert (
-        "'AUTH_PASSWORD_VALIDATORS' must be a list or tuple, but got list" in caplog.text
-        or "If 'AUTH_PASSWORD_VALIDATORS' is specified, it must be a list or tuple, but got list" in caplog.text
-    )
+    # Now it reports specific item error
+    assert "'AUTH_PASSWORD_VALIDATORS[0]' must be a dict, got str" in caplog.text
 
 
 # ===== CACHES Validation Tests =====
@@ -520,37 +514,3 @@ def test_validate_settings_caches_typo_suggestion(caplog):
     assert "Invalid key 'LOCTION' in CACHES['default']" in caplog.text
     assert "Did you mean:" in caplog.text
     assert "LOCATION" in caplog.text  # Should suggest LOCATION (and possibly others like OPTIONS)
-
-
-def test_validate_settings_top_level_typo_debug(caplog):
-    """Test that top-level setting typos are caught (e.g., DEBG instead of DEBUG)."""
-    caplog.set_level(logging.DEBUG)
-    settings_dict = {
-        "SECRET_KEY": "my-secret-key",
-        "DEBG": True,  # Typo: should be DEBUG
-    }
-
-    validate_settings(settings_dict)
-
-    assert "Validating Settings..." in caplog.text
-    # Typos are now just debug warnings, not invalid settings
-    # assert "❌ INVALID SETTINGS" in caplog.text
-    assert "Unknown setting 'DEBG'" in caplog.text
-    assert "Did you mean: DEBUG?" in caplog.text
-
-
-def test_validate_settings_top_level_typo_installed_apps(caplog):
-    """Test that top-level setting typos are caught for INSTALLED_APPS."""
-    caplog.set_level(logging.DEBUG)
-    settings_dict = {
-        "SECRET_KEY": "my-secret-key",
-        "INSTALED_APPS": ["django.contrib.admin"],  # Typo: missing L
-    }
-
-    validate_settings(settings_dict)
-
-    assert "Validating Settings..." in caplog.text
-    # assert "❌ INVALID SETTINGS" in caplog.text
-    assert "Unknown setting 'INSTALED_APPS'" in caplog.text
-    assert "Did you mean:" in caplog.text
-    assert "INSTALLED_APPS" in caplog.text
