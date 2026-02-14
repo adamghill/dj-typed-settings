@@ -353,3 +353,78 @@ def validate_settings(settings_module_globals: dict[str, Any]):
         logger.debug("✅ Settings are valid.")
     except Exception as e:
         logger.error(f"❌ INVALID SETTINGS: {e}")
+
+
+def cast_to_type(value: Any, type_hint: Any, list_delimiter: str = ",") -> Any:
+    """
+    Attempts to cast a value to a given type hint.
+    Primarily used for converting string-based settings (e.g. from environment variables).
+    """
+    if type_hint is Any:
+        return value
+
+    origin = get_origin(type_hint)
+    args = get_args(type_hint)
+
+    # Handle Optional[T] / Union[T, None]
+    if origin is Union:
+        if value is None or (isinstance(value, str) and value.lower() == "none"):
+            return None
+        # Try casting to each type in the union (except NoneType)
+        for arg in args:
+            if str(arg) == "<class 'NoneType'>":
+                continue
+            try:
+                return cast_to_type(value, arg, list_delimiter=list_delimiter)
+            except (ValueError, TypeError):
+                continue
+        return value
+
+    # Handle basic types if value is a string
+    if isinstance(value, str):
+        target_type = type_hint if origin is None else origin
+
+        if target_type is bool:
+            v = value.lower()
+            if v in ("true", "1"):
+                return True
+            if v in ("false", "0"):
+                return False
+            return value
+
+        if target_type is int:
+            try:
+                return int(value)
+            except ValueError:
+                return value
+
+        if target_type is float:
+            try:
+                return float(value)
+            except ValueError:
+                return value
+
+        if target_type is list:
+            items = [item.strip() for item in value.split(list_delimiter)]
+            if args:
+                item_type = args[0]
+                return [cast_to_type(item, item_type, list_delimiter=list_delimiter) for item in items]
+            return items
+
+    return value
+
+
+def fixup_types(settings_globals: dict[str, Any], list_delimiter: str = ",") -> None:
+    """
+    Iterates through the SettingsSchema fields and attempts to cast any matching
+    values in settings_globals to the correct type.
+    """
+    hints = get_type_hints(SettingsSchema)
+
+    for name, type_hint in hints.items():
+        if name in settings_globals:
+            current_value = settings_globals[name]
+            new_value = cast_to_type(current_value, type_hint, list_delimiter=list_delimiter)
+            if new_value != current_value:
+                logger.debug(f"Fixed up {name}: {type(current_value).__name__} -> {type(new_value).__name__}")
+                settings_globals[name] = new_value

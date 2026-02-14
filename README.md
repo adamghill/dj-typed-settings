@@ -99,6 +99,29 @@ This is a drop-in replacement for `from django.conf import settings` which provi
 For third-party or custom settings, it works exactly like `django.conf.settings`, i.e. provides no additional type hints. However, it will still return the setting as expected.
 ```
 
+## Automatically fix setting variable types
+
+`dj-typed-settings` can also automatically fix up setting variable types. This can be helpful when using the standard library `os.getenv()` which always returns a string.
+
+```python
+# settings.py
+
+from os import getenv
+from dj_typed_settings import fixup_types
+
+DEBUG = getenv("DEBUG")
+...
+
+fixup_types(globals())  # this will fix up all variables when called at the end of the file
+```
+
+`fixup_types()` converts all default Django setting variables to the expected type when possible. Supported types:
+
+- `bool` from `"True"`, `"true"`, `"False"`, `"false"`, `"1"`, `"0"`
+- `int` from `"123"`
+- `float` from `"123.45"`
+- `list` from `"1,2,3"` (comma separated)
+
 ### Configuration
 
 You can ignore specific validation errors in your `settings.py`:
@@ -109,3 +132,29 @@ TYPED_SETTINGS_IGNORE_ERRORS = [
     "DATABASES.default.ENGINE",  # Ignore specific nested key
 ]
 ```
+
+## Goals
+
+- Stay as close to "normal" Django settings.py usage as possible
+- No dependencies outside of the Python standard library
+- No runtime performance impact (other than the optional system check)
+
+## Acknowledgments
+
+There are a lot of Django settings libraries. Here are a few I use or looked at recently:
+
+- [django-configurations](https://github.com/jazzband/django-configurations)
+- [Dynaconf](https://www.dynaconf.com/django/)
+- [python-decouple](https://github.com/HBNetwork/python-decouple)
+- [dj-settings](https://github.com/spapanik/dj_settings)
+- [django-typed-settings](https://pypi.org/project/django-typed-settings/)
+- [django-settings-json](https://pypi.org/project/django-settings-json/)
+- [normalized-django-settings](https://github.com/irvingleonard/normalized-django-settings)
+
+There are also a lot of libraries which get settings from the environment, which is a slightly different use case, but is related.
+
+- [django-environ](https://github.com/joke2k/django-environ)
+- [python-dotenv](https://github.com/theskumar/python-dotenv)
+- [environs](https://github.com/sloria/environs)
+- [django-settings-env](https://github.com/deeprave/django-settings-env)
+
