@@ -23,15 +23,21 @@ INSTALLED_APPS = [
 ]
 ```
 
+## Goals
+
+- Stay as close to "normal" Django settings.py usage as possible
+- No dependencies outside of the Python standard library
+- No runtime performance impact (other than the optional system check)
+
 ## Features
 
-There are multiple features to help you write better Django settings. they are all optional and opt-in, so you can use as much or as little as you want.
+There are multiple features to help you write better Django settings. They are all optional and opt-in, so you can use as much or as little as you want.
 
 ### Runtime type checking
 
 Ensures your `settings.py` values match the expected types (e.g., `DEBUG` must be `bool`, `TEMPLATES` must be `list`). Also catches typos and invalid keys in complex settings like `DATABASES`, `CACHES`, and `TEMPLATES`.
 
-This will run a system checks when you run `python manage.py runserver` or `python manage.py check` and raise an error if any setting is the incorrect type.
+This will run a system check when you run `python manage.py runserver` or `python manage.py check` and raise an error if any setting is the incorrect type.
 
 ```{note}
 To skip, runtime type checking altogether, remove `"dj_typed_settings"` from `INSTALLED_APPS`.
@@ -103,13 +109,19 @@ For third-party or custom settings, it works exactly like `django.conf.settings`
 
 `dj-typed-settings` can also automatically fix up setting variable types. This can be helpful when using the standard library `os.getenv()` which always returns a string.
 
+```bash
+# .env
+
+DEBUG=True
+```
+
 ```python
 # settings.py
 
 from os import getenv
 from dj_typed_settings import fixup_types
 
-DEBUG = getenv("DEBUG")
+DEBUG = getenv("DEBUG")  # this would be a string at runtime, i.e. DEBUG = "True"
 ...
 
 fixup_types(globals())  # this will fix up all variables when called at the end of the file
@@ -132,12 +144,6 @@ TYPED_SETTINGS_IGNORE_ERRORS = [
     "DATABASES.default.ENGINE",  # Ignore specific nested key
 ]
 ```
-
-## Goals
-
-- Stay as close to "normal" Django settings.py usage as possible
-- No dependencies outside of the Python standard library
-- No runtime performance impact (other than the optional system check)
 
 ## Acknowledgments
 
