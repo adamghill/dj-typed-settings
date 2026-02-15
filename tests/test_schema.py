@@ -1,6 +1,13 @@
 import pytest
 
-from dj_typed_settings.schema import DatabaseSchema, SettingsSchema, TemplateSchema
+from dj_typed_settings.schema import (
+    AuthPasswordValidatorSchema,
+    CacheSchema,
+    DatabaseSchema,
+    SettingsSchema,
+    TaskSchema,
+    TemplateSchema,
+)
 
 
 def test_template_schema_defaults():
@@ -27,6 +34,31 @@ def test_template_schema_to_dict():
     assert "NAME" not in data  # None values should be excluded
 
 
+def test_task_schema_defaults():
+    schema = TaskSchema(BACKEND="django.tasks.backends.immediate.ImmediateBackend")
+    assert schema.BACKEND == "django.tasks.backends.immediate.ImmediateBackend"
+    assert schema.QUEUES == ["default"]
+    assert schema.OPTIONS == {}
+
+
+def test_task_schema_to_dict():
+    schema = TaskSchema(
+        BACKEND="django.tasks.backends.dummy.DummyBackend",
+        QUEUES=["high_priority"],
+        OPTIONS={"timeout": 30},
+    )
+    data = schema.to_dict()
+    assert data["BACKEND"] == "django.tasks.backends.dummy.DummyBackend"
+    assert data["QUEUES"] == ["high_priority"]
+    assert data["OPTIONS"] == {"timeout": 30}
+
+
+def test_task_schema_dict_behavior():
+    schema = TaskSchema(BACKEND="my.backend")
+    assert schema["BACKEND"] == "my.backend"
+    assert schema.get("QUEUES") == ["default"]
+
+
 def test_database_schema_defaults():
     schema = DatabaseSchema(ENGINE="django.db.backends.postgresql", NAME="mydb")
     assert schema.ENGINE == "django.db.backends.postgresql"
@@ -41,6 +73,26 @@ def test_database_schema_defaults():
     assert schema.OPTIONS == {}
     assert schema.TIME_ZONE is None
     assert schema.TEST == {}
+    assert schema.CONN_HEALTH_CHECKS is False
+
+
+def test_cache_schema_defaults():
+    schema = CacheSchema(BACKEND="django.core.cache.backends.locmem.LocMemCache")
+    assert schema.BACKEND == "django.core.cache.backends.locmem.LocMemCache"
+    assert schema.LOCATION is None
+    assert schema.TIMEOUT is None
+    assert schema.OPTIONS == {}
+    assert schema.KEY_PREFIX is None
+    assert schema.KEY_FUNCTION is None
+    assert schema.VERSION is None
+
+
+def test_auth_password_validator_schema():
+    schema = AuthPasswordValidatorSchema(
+        NAME="django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+    )
+    assert schema.NAME == "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+    assert schema.OPTIONS == {}
 
 
 def test_database_schema_to_dict():
