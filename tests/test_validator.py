@@ -37,9 +37,14 @@ def test_validate_type_dict():
 
 def test_validate_type_union_optional():
     validate_type(1, int | str, "field")
-    validate_type("s", int | str, "field")
+    validate_type("123", int | str, "field")
     validate_type(None, int | None, "field")
     validate_type(1, int | None, "field")
+
+    # Now "s" invalid because str | int implies numeric string
+    with pytest.raises(ValueError) as exc:
+        validate_type("s", int | str, "field")
+    assert "must be a valid integer string" in str(exc.value)
 
     with pytest.raises(ValueError) as exc:
         validate_type(1.5, int | str, "field")
@@ -188,6 +193,7 @@ def test_validate_schema_with_list_tuple_unions():
         "middleware": [],  # empty list
     }
     validate_data_against_schema(data_mixed, SchemaWithUnionTypes)
+    validate_data_against_schema(data_mixed, SchemaWithUnionTypes)
 
 
 def test_validate_nested_schema_object():
@@ -215,3 +221,20 @@ def test_validate_nested_schema_object():
     # This should pass if validator supports Mapping/Schema objects
     validate_data_against_schema(data, OuterSchema)
 
+
+def test_validate_str_int_union_checks_digits():
+    """
+    Test that a Union[str, int] (or str | int) enforces that if the value is a string,
+    it must be a digit string (or empty), not arbitrary text.
+    Relevant for PORT settings.
+    """
+    # Valid cases
+    validate_type(123, str | int, "field")
+    validate_type("123", str | int, "field")
+    validate_type("", str | int, "field")  # Empty string allowed (e.g. default port)
+
+    # Invalid case: arbitrary string
+    with pytest.raises(ValueError) as exc:
+        validate_type("invalid_port", str | int, "field")
+    assert "field" in str(exc.value)
+    assert "must be a valid integer string" in str(exc.value)

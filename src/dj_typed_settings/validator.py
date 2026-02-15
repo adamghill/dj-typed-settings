@@ -93,6 +93,15 @@ def validate_type(
 
     # Handle Optional[T] which is Union[T, NoneType] or T | None
     if origin is Union or (hasattr(types, "UnionType") and origin is types.UnionType):
+        # Specific check for Union[str, int] (e.g. PORT) - strings must be digits
+        if str in args and int in args and isinstance(value, str):
+            if value and not value.isdigit():
+                raise SettingsError(
+                    f"'{error_path}' must be a valid integer string, got '{value}'",
+                    code="E003",
+                    is_base_type_error=True,
+                )
+
         # Check if value matches ANY of the args
         type_errors = []
         value_errors = []
