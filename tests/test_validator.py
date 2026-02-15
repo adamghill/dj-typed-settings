@@ -3,6 +3,7 @@ from typing import Any
 
 import pytest
 
+from dj_typed_settings.schema import BaseSchema
 from dj_typed_settings.validator import validate_data_against_schema, validate_type
 
 
@@ -187,3 +188,30 @@ def test_validate_schema_with_list_tuple_unions():
         "middleware": [],  # empty list
     }
     validate_data_against_schema(data_mixed, SchemaWithUnionTypes)
+
+
+def test_validate_nested_schema_object():
+    """
+    Test validation when a nested field is a Schema object (MutableMapping) instead of a dict.
+    This reproduces the issue where 'DATABASES' entries are DatabaseSchema objects.
+    """
+
+    @dataclass
+    class InnerSchema(BaseSchema):
+        name: str
+
+    @dataclass
+    class OuterSchema(BaseSchema):
+        inner: InnerSchema
+        mapping: dict[str, InnerSchema]
+
+    # Test 1: Direct nesting
+    inner_obj = InnerSchema(name="foo")
+    data = {
+        "inner": inner_obj,
+        "mapping": {"key": inner_obj},
+    }
+
+    # This should pass if validator supports Mapping/Schema objects
+    validate_data_against_schema(data, OuterSchema)
+

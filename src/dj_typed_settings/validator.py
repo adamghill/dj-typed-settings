@@ -200,7 +200,7 @@ def validate_type(
 
     # Handle BaseSchema subclasses (recursive validation)
     if isinstance(type_hint, type) and issubclass(type_hint, BaseSchema):
-        if not isinstance(value, dict):
+        if not isinstance(value, Mapping):
             raise SettingsError(
                 f"'{error_path}' must be a dict, got {type(value).__name__}", code="E003", is_base_type_error=True
             )
