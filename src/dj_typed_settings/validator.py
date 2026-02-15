@@ -1,5 +1,6 @@
 import logging
 import types
+from collections.abc import Mapping
 from dataclasses import MISSING, dataclass, fields
 from difflib import get_close_matches
 from typing import Any, Union, get_args, get_origin, get_type_hints

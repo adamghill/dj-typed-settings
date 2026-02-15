@@ -6,6 +6,7 @@ from dj_typed_settings.alias import (
     TEMPLATE,
 )
 from dj_typed_settings.conf import settings
+from dj_typed_settings.env import load_env
 from dj_typed_settings.validator import fix_types, validate_settings
 
 fixup_types = fix_types
@@ -17,6 +18,7 @@ __all__ = [
     "defaults",
     "fix_types",
     "fixup_types",
+    "load_env",
     "settings",
     "validate_settings",
 ]
