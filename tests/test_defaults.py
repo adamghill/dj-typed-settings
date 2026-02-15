@@ -39,15 +39,11 @@ def test_defaults_docstrings_in_file():
 def test_defaults_type_hints_resolvable():
     """Test that all type hints in defaults.py are resolvable."""
 
-    # This will raise a NameError if any type hint references an undefined name
-    # (unless from __future__ import annotations is used, in which case it might still fail if evaluated)
-    # Using get_type_hints(defaults) forces evaluation of the hints.
     hints = get_type_hints(defaults)
 
     assert "DEBUG" in hints
     assert hints["DEBUG"] is bool
 
     assert "DATABASES" in hints
-    # DATABASES: dict[str, DatabaseSchema] = {}
-    # The hint should be resolvable now
+
     assert "DatabaseSchema" in str(hints["DATABASES"])

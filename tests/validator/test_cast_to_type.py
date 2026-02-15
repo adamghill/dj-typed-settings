@@ -1,6 +1,5 @@
 import pytest
 
-from dj_typed_settings import fix_types
 from dj_typed_settings.validator import cast_to_type
 
 
@@ -37,23 +36,6 @@ def test_cast_to_optional():
     assert cast_to_type("123", int | None) == 123
     assert cast_to_type("None", int | None) is None
     assert cast_to_type(None, int | None) is None
-
-
-def test_fix_types():
-    # Use some settings that are likely in SettingsSchema
-    settings_globals = {
-        "DEBUG": "True",
-        "ALLOWED_HOSTS": "localhost,127.0.0.1",
-        "EMAIL_PORT": "25",
-        "UNKNOWN_SETTING": "string",
-    }
-
-    fix_types(settings_globals)
-
-    assert settings_globals["DEBUG"] is True
-    assert settings_globals["ALLOWED_HOSTS"] == ["localhost", "127.0.0.1"]
-    assert settings_globals["EMAIL_PORT"] == 25
-    assert settings_globals["UNKNOWN_SETTING"] == "string"
 
 
 @pytest.mark.parametrize(

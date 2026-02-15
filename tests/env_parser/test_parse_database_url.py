@@ -1,6 +1,6 @@
 import pytest
 
-from dj_typed_settings.env_parser import parse_cache_url, parse_database_url
+from dj_typed_settings.env_parser import parse_database_url
 
 DB_DEFAULTS = {
     "ATOMIC_REQUESTS": False,
@@ -123,11 +123,13 @@ def test_parse_unsupported_scheme():
 def test_parse_options():
     url = "postgres://user:password@localhost/dbname?conn_max_age=600&atomic_requests=True"
     config = parse_database_url(url)
-    # Check options specifically, confusing to check whole dict with overridden defaults
+
+    # Check options specifically
     assert config.OPTIONS == {
         "conn_max_age": 600,
         "atomic_requests": "True",
     }
+
     # Verify defaults are still there but OPTIONS is updated
     # Note: parsing logic puts parsed options into OPTIONS dict.
     # So assertions on the full dict should expect OPTIONS to be populated.
@@ -161,88 +163,6 @@ def test_parse_ipv6():
     }
 
 
-def test_parse_cache_dummy():
-    url = "dummycache://"
-    config = parse_cache_url(url)
-    assert config.to_dict() == {
-        "BACKEND": "django.core.cache.backends.dummy.DummyCache",
-        "LOCATION": "dummy",
-        **CACHE_DEFAULTS,
-    }
-
-
-def test_parse_cache_file():
-    url = "filecache:///tmp/django_cache"
-    config = parse_cache_url(url)
-    assert config.to_dict() == {
-        "BACKEND": "django.core.cache.backends.filebased.FileBasedCache",
-        "LOCATION": "/tmp/django_cache",  # noqa: S108
-        **CACHE_DEFAULTS,
-    }
-
-
-def test_parse_cache_db():
-    url = "dbcache://my_cache_table"
-    config = parse_cache_url(url)
-    assert config.to_dict() == {
-        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
-        "LOCATION": "my_cache_table",
-        **CACHE_DEFAULTS,
-    }
-
-
-def test_parse_cache_locmem():
-    url = "locmemcache://my-snowflake"
-    config = parse_cache_url(url)
-    assert config.to_dict() == {
-        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-        "LOCATION": "my-snowflake",
-        **CACHE_DEFAULTS,
-    }
-
-
-def test_parse_cache_redis():
-    url = "redis://127.0.0.1:6379/1"
-    config = parse_cache_url(url)
-    assert config.to_dict() == {
-        "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/1",
-        **CACHE_DEFAULTS,
-    }
-
-
-def test_parse_cache_redis_options():
-    url = "redis://127.0.0.1:6379/1?ignore_exceptions=True"
-    config = parse_cache_url(url)
-    expected = {
-        "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/1",
-        **CACHE_DEFAULTS,
-    }
-    expected["OPTIONS"] = {"ignore_exceptions": "True"}
-    assert config.to_dict() == expected
-
-
-def test_parse_cache_memcached():
-    url = "memcache://127.0.0.1:11211"
-    config = parse_cache_url(url)
-    assert config.to_dict() == {
-        "BACKEND": "django.core.cache.backends.memcached.MemcachedCache",
-        "LOCATION": "127.0.0.1:11211",
-        **CACHE_DEFAULTS,
-    }
-
-
-def test_parse_cache_memcached_multiple():
-    url = "memcache://127.0.0.1:11211,127.0.0.1:11212"
-    config = parse_cache_url(url)
-    assert config.to_dict() == {
-        "BACKEND": "django.core.cache.backends.memcached.MemcachedCache",
-        "LOCATION": ["127.0.0.1:11211", "127.0.0.1:11212"],
-        **CACHE_DEFAULTS,
-    }
-
-
 def test_parse_database_url_empty():
     with pytest.raises(AssertionError, match="URL is required"):
         parse_database_url("")
@@ -252,14 +172,3 @@ def test_parse_database_url_empty():
 
     with pytest.raises(AssertionError, match="URL is required"):
         parse_database_url(None)  # type: ignore
-
-
-def test_parse_cache_url_empty():
-    with pytest.raises(AssertionError, match="URL is required"):
-        parse_cache_url("")
-
-    with pytest.raises(AssertionError, match="URL is required"):
-        parse_cache_url("   ")
-
-    with pytest.raises(AssertionError, match="URL is required"):
-        parse_cache_url(None)  # type: ignore
