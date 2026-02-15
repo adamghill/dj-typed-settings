@@ -415,7 +415,7 @@ def cast_to_type(value: Any, type_hint: Any, list_delimiter: str = ",") -> Any:
     return value
 
 
-def fixup_types(settings_globals: dict[str, Any], list_delimiter: str = ",") -> None:
+def fix_types(settings_globals: dict[str, Any], list_delimiter: str = ",") -> None:
     """
     Iterates through the SettingsSchema fields and attempts to cast any matching
     values in settings_globals to the correct type.

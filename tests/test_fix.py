@@ -1,6 +1,6 @@
 import pytest
 
-from dj_typed_settings import fixup_types
+from dj_typed_settings import fix_types
 from dj_typed_settings.validator import cast_to_type
 
 
@@ -39,7 +39,7 @@ def test_cast_to_optional():
     assert cast_to_type(None, int | None) is None
 
 
-def test_fixup_types():
+def test_fix_types():
     # Use some settings that are likely in SettingsSchema
     settings_globals = {
         "DEBUG": "True",
@@ -48,7 +48,7 @@ def test_fixup_types():
         "UNKNOWN_SETTING": "string",
     }
 
-    fixup_types(settings_globals)
+    fix_types(settings_globals)
 
     assert settings_globals["DEBUG"] is True
     assert settings_globals["ALLOWED_HOSTS"] == ["localhost", "127.0.0.1"]

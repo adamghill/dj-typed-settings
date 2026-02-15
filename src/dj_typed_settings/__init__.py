@@ -6,14 +6,16 @@ from dj_typed_settings.alias import (
     TEMPLATE,
 )
 from dj_typed_settings.conf import settings
-from dj_typed_settings.validator import fixup_types, validate_settings
+from dj_typed_settings.validator import fix_types, validate_settings
 
+fixup_types = fix_types
 __all__ = [
     "AUTH_PASSWORD_VALIDATOR",
     "CACHE",
     "DATABASE",
     "TEMPLATE",
     "defaults",
+    "fix_types",
     "fixup_types",
     "settings",
     "validate_settings",
