@@ -3,6 +3,7 @@ import ast
 import inspect
 import json
 import sys
+import textwrap
 import urllib.request
 from datetime import datetime
 from pathlib import Path
@@ -254,7 +255,7 @@ def extract_default_value(node):
                     return None
                 else:
                     return None
-            return "[" + ", ".join(elements) + "]"
+            return "[\n    " + ",\n    ".join(elements) + ",\n]"
         except:  # noqa: E722
             return None
     elif isinstance(node, ast.Dict):
@@ -264,7 +265,19 @@ def extract_default_value(node):
     elif isinstance(node, ast.Tuple):
         if len(node.elts) == 0:
             return "()"
-        return None
+        try:
+            elements = []
+            for elt in node.elts:
+                if isinstance(elt, ast.Constant):
+                    if isinstance(elt.value, str):
+                        elements.append(json.dumps(elt.value))
+                    else:
+                        elements.append(repr(elt.value))
+                else:
+                    return None
+            return "(\n    " + ",\n    ".join(elements) + ",\n)"
+        except:  # noqa: E722
+            return None
     elif isinstance(node, ast.Name):
         if node.id in ["True", "False"]:
             return node.id
@@ -404,13 +417,22 @@ def generate_schema(url=None):
                         if isinstance(v, str):
                             return json.dumps(v)
                         if isinstance(v, list):
-                            return "[" + ", ".join(format_value(x) for x in v) + "]"
+                            # Multiline list generation
+                            items = [format_value(x) for x in v]
+                            if not items:
+                                return "[]"
+                            return "[\n    " + ",\n    ".join(items) + ",\n]"
                         if isinstance(v, tuple):
-                            return "(" + ", ".join(format_value(x) for x in v) + ")"
+                            # Multiline tuple generation
+                            items = [format_value(x) for x in v]
+                            if not items:
+                                return "()"
+                            return "(\n    " + ",\n    ".join(items) + ",\n)"
                         if isinstance(v, dict):
-                            return (
-                                "{" + ", ".join(f"{json.dumps(k)}: {format_value(val)}" for k, val in v.items()) + "}"
-                            )
+                            items = [f"{json.dumps(k)}: {format_value(val)}" for k, val in v.items()]
+                            if not items:
+                                return "{}"
+                            return "{\n    " + ",\n    ".join(items) + ",\n}"
                         return repr(v)
 
                     final_val = None
@@ -447,12 +469,22 @@ def generate_schema(url=None):
 
                     field_line = f"    {name}: {type_hint}"
                     if has_default:
-                        field_line += f" = {default_val}"
+                        if name == "AUTH_PASSWORD_VALIDATORS":
+                            field_line += " = field(\n        default_factory=list\n    )"
+                        else:
+                            field_line += f" = {default_val}"
 
                     if docstring:
                         safe_doc = docstring.replace('"""', '\\"\\"\\"')
-                        # Indent docstring
-                        indented_doc = "\n    ".join(safe_doc.splitlines())
+                        lines = safe_doc.splitlines()
+                        wrapped_lines = []
+                        for line in lines:
+                            if line.strip():
+                                wrapped_lines.extend(textwrap.wrap(line, width=80))
+                            else:
+                                wrapped_lines.append("")
+
+                        indented_doc = "\n    ".join(wrapped_lines)
                         field_line += f'\n    r"""\n    {indented_doc}\n    """'
 
                     if has_default:
@@ -648,9 +680,9 @@ def generate_schema(url=None):
         '    """',
         "    KEY_FUNCTION: str | None = None",
         '    """',
-        "    A string containing a dotted path to a function (or any callable) "
-        "that defines how to compose a prefix, version and "
-        "key into a final cache key.",
+        "    A string containing a dotted path to a function (or any callable)",
+        "    that defines how to compose a prefix, version and key into a final",
+        "    cache key.",
         '    """',
         "    VERSION: int | None = None",
         '    """',
@@ -676,7 +708,7 @@ def generate_schema(url=None):
         '    """',
         "    The Tasks backend to use.",
         '    """',
-        "    QUEUES: list[str] | tuple[str, ...] = field(default_factory=lambda: ['default'])",
+        '    QUEUES: list[str] | tuple[str, ...] = field(default_factory=lambda: ["default"])',
         '    """',
         "    Specify the queue names supported by the backend.",
         '    """',
@@ -748,6 +780,23 @@ def generate_defaults_file(settings_fields):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Generate Django settings schema.")
     parser.add_argument("--url", help="URL to download global_settings.py from", default=None)
+    parser.add_argument("--no-lint", action="store_true", help="Do not run linting/formatting after generation")
     args = parser.parse_args()
 
     generate_schema(url=args.url)
+
+    if not args.no_lint:
+        import subprocess
+
+        print("Running linter and formatter...")  # noqa: T201
+        try:
+            subprocess.run(  # noqa: S603
+                ["uv", "run", "ruff", "check", "--fix", str(OUTPUT_FILE), str(DEFAULTS_OUTPUT_FILE)],  # noqa: S607
+                check=False,
+            )
+            subprocess.run(  # noqa: S603
+                ["uv", "run", "ruff", "format", str(OUTPUT_FILE), str(DEFAULTS_OUTPUT_FILE)],  # noqa: S607
+                check=False,
+            )
+        except FileNotFoundError:
+            print("Warning: 'uv' not found. Skipping lint/format.")  # noqa: T201
