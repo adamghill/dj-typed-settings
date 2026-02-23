@@ -125,7 +125,7 @@ class DatabaseSchema(BaseSchema):
     """
     The database backend to use.
     """
-    NAME: str
+    NAME: str | Path
     """
     The name of the database to use.
     """
