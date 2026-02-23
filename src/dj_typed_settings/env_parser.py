@@ -54,15 +54,6 @@ def parse_database_url(url: str, engine: str | None = None) -> DatabaseSchema:
     try:
         parsed = urllib.parse.urlparse(url)
     except ValueError:
-        # Return a bare minimum schema or raise?
-        # Original returned {}, keeping it consistent with Schema
-        # But Schema requires ENGINE and NAME.
-        # If parsing fails, we should probably raise generic error or return default
-        # But existing code returned {}, which implies empty config.
-        # Since Schema requires fields, we might need to handle this.
-        # Re-reading original: "except ValueError: return {}"
-        # If I return DatabaseSchema, I must provide ENGINE and NAME.
-        # I'll raise ValueError purely because constructing an empty DatabaseSchema is likely invalid for Django anyway.
         raise ValueError(f"Invalid database URL: {url}") from None
 
     scheme = parsed.scheme
