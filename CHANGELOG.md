@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1
+
+- Allow `str` or `Path` for database `NAME` for sqlite.
+
 ## 0.3.0
 
 - Add `load_env()` to load .env files.
