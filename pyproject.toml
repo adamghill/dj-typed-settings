@@ -1,6 +1,6 @@
 [project]
 name = "dj-typed-settings"
-version = "0.3.0"
+version = "0.3.1"
 description = "Check your Django settings for common issues."
 readme = "README.md"
 requires-python = ">=3.10"
